@@ -1,0 +1,45 @@
+import basics as h
+def testAddTableCard():
+	assert(h.addTableCard("2D", h.tableCards))
+	assert(h.addTableCard("3C", h.tableCards))
+	assert(h.addTableCard("4H", h.tableCards))
+	assert(h.addTableCard("5S", h.tableCards))
+	assert(not h.addTableCard("QQ", h.tableCards))
+	print("False card non addition enforced")
+	assert(h.addTableCard("AS", h.tableCards))
+	assert(not h.addTableCard("AH", h.tableCards))
+	print("Table card limit enforced")
+	assert("3C" in h.tableCards)
+	assert("4H" in h.tableCards)
+	assert("AS" in h.tableCards)
+	print("Added cards recieved")
+	assert("AH" not in h.tableCards)
+	print("Table card limit enforced")
+	print("Table after dealing: ", end=str(h.tableCards) + "\n")
+testAddTableCard()
+
+def testPlayers():
+	h.addPlayer()
+	h.removePlayer(1)
+	assert(h.players == [])
+	print("Basic adding and removing a player works")
+	for x in range(0,20):
+		h.addPlayer()
+	assert(len(h.players)==9)
+	print("Player limit enforced")
+	h.removePlayer(1)
+	assert(len(h.players)==8)
+	print("Player removal works")
+	for x in range(0,20):
+		h.removePlayer(1)
+	assert(h.players==[])
+	print("Removing players from empty table does nothing")
+testPlayers()
+def testDeal():
+	h.addPlayers(9)
+	h.deal()
+	for p in h.players:
+		assert(p[0][1] in h.suits and p[1][1] in h.suits)
+		assert(p[0][0] in h.order and p[1][0] in h.order)
+	print("All hands contain cards with a valid order and suit")
+testDeal()
