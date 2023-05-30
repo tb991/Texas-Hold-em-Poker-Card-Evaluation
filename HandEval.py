@@ -140,5 +140,3 @@ def determine(table, hand):
 		print("PAIR")
 	else:
 		print("HIGH CARD")
-	
-		print("PAIR")
