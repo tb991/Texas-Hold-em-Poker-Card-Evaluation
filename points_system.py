@@ -8,11 +8,10 @@ There are 13 values for high card, so I need 13 zeroes to start with.
 or value = [0]*13
 don't need to select the five highest cards, just calculate for the seven
 '''
-# high cards can be compared by value
+# high cards fails for small kickers
 # flushes can be compared by value
 # straights can be compared by value
-# pairs
-# all hands can be evaluated so long as they are different by rank (pair, two pair etc)
+# pairs is failing because irrelevant small kickers are counting (when it is best of the 5 cards not the 7)
 import basics as b
 def highCardValuator(table, hand):
 	cs = table + hand
@@ -100,7 +99,8 @@ def evaluate(table, hands):
 		if v==ranks[highestRank]:
 			winners[idx] = 1
 		idx +=1
-	# all winners up to here are not necessarily the winners, only so if their hands are equivalent
+	# all winners up to here are not necessarily the winners, only so if their hands are different
+	# what I mean is that if a pair is the highest ranked hand, all players with a pair are marked as winners up to here
 	# here belongs the comparison of similar hands
 	if ranks[highestRank]=="HIGH CARD":
 		vals = []
@@ -138,9 +138,88 @@ def evaluate(table, hands):
 			i+=1
 		winners = points
 	elif ranks[highestRank]=="PAIR":
-		print("boo2")
+		vals = []
+		for ha in hands:
+			vals.append(highCardValuator(table, ha))
+		# remember I only need to deal with multiple hands being pairs, otherwise I can just say the winner is whoever has the (one) pair
+		if sum(winners)==1:
+			pass
+		else:
+			# two situations to consider
+			# 1) there are multiple pairs of different value
+				# find the indexes of the highest pair
+			i = 0
+			idx = -1
+			indexes = [-1]*len(vals)
+			while i < len(vals):
+				j = 0
+				while j < len(vals[i]):
+					if vals[i][j]==2:
+						indexes[i] = j
+					j += 1
+				i += 1
+			m = max(indexes)
+			i = 0
+			# need to preserve winners variable if we're in the 2nd situation
+			winCount = 0
+			while i < len(indexes):
+				if indexes[i]==m:
+					indexes[i] = 1
+					winCount += 1
+				else:
+					indexes[i] = 0
+				i += 1
+			if winCount==1:
+				winners = indexes
+			elif winCount > 1:
+			# 2) there are similar pairs with different kickers (or a draw with the similar kickers) 
+				# if we're here then there are multiple pairs
+				# to solve this i will produce a number for the pair
+				relStr = [""]*len(vals)
+				relInt = [0]*len(vals)
+				# for example a pair of aces will produce 1000000000000
+				# and a pair of twos will produce 1, a pair of sevens will produce 100000
+				# i will then produce a string of digits from vals but removing the two's
+				i = 0
+				while i < len(vals):
+					j = len(vals[i]) - 1
+					while j >= 0:
+						if vals[i][j] == 2:
+							relStr[i] += "1"
+						else:
+							relStr[i] += "0"
+						j -= 1
+					i += 1
+				i = 0
+				# i will prepend the number for the pairs to the modified number from vals
+				while i < len(vals):
+					j = len(vals[i]) - 1
+					while j >= 0:
+						if vals[i][j] == 2:
+							relStr[i] += "0"
+						else:
+							relStr[i] += str(vals[i][j])
+						j -= 1
+					i += 1
+				# when these numbers are compared, the largest (ones) will be the winners 
+				i = 0
+				while i < len(relStr):
+					relInt[i] = int(relStr[i])
+					i += 1
+				# now set the winners
+				i = 0
+				theMax = max(relInt)
+				while i < len(relInt):
+					if relInt[i] == theMax:
+						winners[i] = 1
+					else:
+						winners[i] = 0
+					i += 1
 	elif ranks[highestRank]=="TWO PAIR":
-		print("boo3")
+		vals = []
+		for ha in hands:
+			vals.append(highCardValuator(table, ha))
+		
 	elif ranks[highestRank]=="THREE OF A KIND":
 		print("boo4")
 	elif ranks[highestRank]=="STRAIGHT":
@@ -169,12 +248,36 @@ def genTest():
 	table = ["8H", "2S", "3D", "4S",  "5H"]
 	hands = [["TH", "9S"], ["7S", "9H"]]
 	assert evaluate(table, hands)==[1,0], "High cards valuation fails 2"
+	table = ["3S", "QS", "JD", "KS",  "AH"]
+	hands = [["7H", "5H"], ["7C", "4D"]]
+	assert evaluate(table, hands)==[1,1], "High cards valuation fails 3"
 	table = ["AS", "KS", "4D", "TS",  "9H"]
 	hands = [["AH", "3H"], ["KD", "2C"]]
-	assert evaluate(table, hands)==[0,1], "Pairs valuation fails"
+	assert evaluate(table, hands)==[1,0], "Pairs valuation fails 1"
+	table = ["AS", "KS", "4D", "TS",  "9H"]
+	hands = [["AH", "3H"], ["AD", "3D"]]
+	assert evaluate(table, hands)==[1,1], "Pairs valuation fails 2 (draw)"
+	table = ["AS", "KS", "4D", "TS",  "9H"]
+	hands = [["AH", "3H"], ["AD", "5D"]]
+	assert evaluate(table, hands)==[0,1], "Pairs valuation fails 3 (different kicker)"
+	table = ["AS", "KS", "4D", "TS",  "9H"]
+	hands = [["AH", "3H"], ["AD", "5D"], ["AC", "5H"]]
+	assert evaluate(table, hands)==[0,1, 1], "Pairs valuation fails 4"
+	table = ["3S", "2S", "4D", "TS",  "9H"]
+	hands = [["2H", "5H"], ["2D", "5D"], ["3H", "5H"], ["3H", "5C"]]
+	assert evaluate(table, hands)==[0,0,1,1], "Pairs valuation fails 5"
+	table = ["3S", "2S", "JD", "TS",  "9H"]
+	hands = [["2H", "5H"], ["2D", "6D"]]
+	assert evaluate(table, hands)==[1,1], "Pairs valuation fails 6"
 	table = ["AS", "KS", "4D", "TS",  "9H"]
 	hands = [["9S", "KC"], ["KD", "4C"]]
-	assert evaluate(table, hands)==[0,1], "Two pairs valuation fails"
+	assert evaluate(table, hands)==[1,0], "Two pairs valuation fails 1"
+	table = ["2S", "4S", "6H", "8H",  "TC"]
+	hands = [["2D", "6D"], ["2C", "8D"], ["TS", "2H"]]
+	assert evaluate(table, hands)==[0, 0, 1], "Two pairs valuation fails 2"
+	table = ["2S", "4S", "6H", "6S",  "TC"]
+	hands = [["2D", "3H"], ["2C", "8D"], ["3S", "2H"]]
+	assert evaluate(table, hands)==[1, 1, 1], "Two pairs valuation fails 3"
 	table = ["AS", "KS", "4D", "TS",  "9H"]
 	hands = [["KS", "KC"], ["AD", "AC"], ["9D", "8H"]]
 	assert evaluate(table, hands)==[0, 1, 0], "Three of a kind valuation fails"
