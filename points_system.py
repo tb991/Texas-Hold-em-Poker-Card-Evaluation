@@ -106,6 +106,18 @@ def evaluate(table, hands):
 		vals = []
 		for ha in hands:
 			vals.append(highCardValuator(table, ha))
+		# (IMPORTANT) removing the two lowest value cards from each "hand" (5 is a hand not 7)
+		j = 0
+		while j < len(vals):
+			i = 0
+			count = 0
+			while i < len(vals[j]):
+				if count < 2 and vals[j][i]==1:
+					vals[j][i] = 0
+					count += 1
+				i += 1
+			j += 1
+		# (/IMPORTANT)
 		# vals now contains [0,1,1,0.. etc] representing how many of each card appear in the hand
 		# if each index has a number associated with it that cannot be trumped by prior numbers when multiplied by the amount ...
 		# then the accumulation of the numbers represents its relative value
@@ -141,6 +153,18 @@ def evaluate(table, hands):
 		vals = []
 		for ha in hands:
 			vals.append(highCardValuator(table, ha))
+		# (IMPORTANT) removing the two lowest value cards from each "hand"
+		j = 0
+		while j < len(vals):
+			i = 0
+			count = 0
+			while i < len(vals[j]):
+				if count < 2 and vals[j][i]==1:
+					vals[j][i] = 0
+					count += 1
+				i += 1
+			j += 1
+		# (/IMPORTANT)
 		# remember I only need to deal with multiple hands being pairs, otherwise I can just say the winner is whoever has the (one) pair
 		if sum(winners)==1:
 			pass
@@ -219,7 +243,9 @@ def evaluate(table, hands):
 		vals = []
 		for ha in hands:
 			vals.append(highCardValuator(table, ha))
-		
+		# (IMPORTANT) there's only one kicker with a two pair, but if there are three pairs then I assume the ...
+		# third pair can act as a kicker, so this is quite confusing, can't simply remove the two lowest kickers ...
+		# may have to set any pairs smaller than the highest to to 1 in vals
 	elif ranks[highestRank]=="THREE OF A KIND":
 		print("boo4")
 	elif ranks[highestRank]=="STRAIGHT":
@@ -259,10 +285,10 @@ def genTest():
 	assert evaluate(table, hands)==[1,1], "Pairs valuation fails 2 (draw)"
 	table = ["AS", "KS", "4D", "TS",  "9H"]
 	hands = [["AH", "3H"], ["AD", "5D"]]
-	assert evaluate(table, hands)==[0,1], "Pairs valuation fails 3 (different kicker)"
+	assert evaluate(table, hands)==[1,1], "Pairs valuation fails 3 (different kicker)"
 	table = ["AS", "KS", "4D", "TS",  "9H"]
 	hands = [["AH", "3H"], ["AD", "5D"], ["AC", "5H"]]
-	assert evaluate(table, hands)==[0,1, 1], "Pairs valuation fails 4"
+	assert evaluate(table, hands)==[1,1, 1], "Pairs valuation fails 4"
 	table = ["3S", "2S", "4D", "TS",  "9H"]
 	hands = [["2H", "5H"], ["2D", "5D"], ["3H", "5H"], ["3H", "5C"]]
 	assert evaluate(table, hands)==[0,0,1,1], "Pairs valuation fails 5"
@@ -275,9 +301,15 @@ def genTest():
 	table = ["2S", "4S", "6H", "8H",  "TC"]
 	hands = [["2D", "6D"], ["2C", "8D"], ["TS", "2H"]]
 	assert evaluate(table, hands)==[0, 0, 1], "Two pairs valuation fails 2"
+	table = ["AS", "4S", "6H", "8H",  "8C"]
+	hands = [["JD", "6D"], ["6C", "KD"]]
+	assert evaluate(table, hands)==[1, 1], "Two pairs valuation fails 2.5"
+	table = ["2S", "4S", "6H", "8H",  "8C"]
+	hands = [["2D", "6D"], ["6C", "KD"]]
+	assert evaluate(table, hands)==[0, 1], "Two pairs valuation fails 3"
 	table = ["2S", "4S", "6H", "6S",  "TC"]
 	hands = [["2D", "3H"], ["2C", "8D"], ["3S", "2H"]]
-	assert evaluate(table, hands)==[1, 1, 1], "Two pairs valuation fails 3"
+	assert evaluate(table, hands)==[1, 1, 1], "Two pairs valuation fails 4"
 	table = ["AS", "KS", "4D", "TS",  "9H"]
 	hands = [["KS", "KC"], ["AD", "AC"], ["9D", "8H"]]
 	assert evaluate(table, hands)==[0, 1, 0], "Three of a kind valuation fails"
