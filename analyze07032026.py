@@ -1,5 +1,5 @@
 # purpose of this file is to look at 7 available cards and call relevant functions to check what the player has
-
+import scores
 
 sevencards1 = ["2S","2D","3H","3C","4S","4H", "4D"] # sample for testing
 sevencards2 = ["2S","3D","5H","6C","AS","QH", "TH"] # sample for testing
@@ -9,6 +9,7 @@ sevencards20 = ["2S","2D","3H","3C","4S","6H", "8D"] # sample for testing
 sevencards21 = ["2S","2D","5H","AC","AS","5D", "TH"] # sample for testing
 sevencards22 = ["2S","9D","7H","2C","7S","2H", "7H"] # sample for testing
 
+# given seven cards ordered by rank, give me a score (based on high card evaluation) to distinguish them
 def score(sc):
 	ranks = "AKQJT98765432"
 	fiveCards = []
@@ -21,23 +22,45 @@ def score(sc):
 			break
 	score = 0
 	vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+	decreaser = 20**5
 	for f in fiveCards: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
-		score += vals.index(f[0]) + 1
+		score += (vals.index(f[0]) + 1)*decreaser
+		decreaser = decreaser // 20
 	return score
-#print(score(sevencards1))
-def boolPrint(sc):
+# this is eventually for a score so i can determine the winner in a game
+def go(sc):
 	x1 = pair(sc) # [0] == 1
-	x2 = toak(sc) # True
-	x3 = twopair(sc) # [0] == True
-	x4 = fullhouse(sc) # [0] == True
-	x5 = foak(sc) # True
-	x6 = straight(sc) # len() == 5
-	x7 = flush(sc) # [0] == True
+	x2 = twopair(sc) # [0] == True
+	x3 = toak(sc) # [0] = True
+	x4 = straight(sc) # len() == 5
+	x5 = flush(sc) # [0] == True
+	x6 = fullhouse(sc) # [0] == True
+	x7 = foak(sc) # True
 	x8 = strFlush(sc) # True
-	print([x1,x2,x3,x4,x5,x6,x7,x8])
+	#print([x1,x2,x3,x4,x5,x6,x7,x8])
+	out = 0
+	if x8:
+		out = 8
+	elif x7:
+		out = 7
+	elif x6[0]:
+		out = 6
+	elif x5[0]:
+		out = 5
+	elif len(x4) == 5:
+		out = 4
+	elif x3[0]:
+		out = 3
+	elif x2[0]:
+		out = 2
+	elif x1[0]:
+		out = 1
+	else:
+		out = 0
+	return out
 def highcard(sc):
 	x1 = pair(sc) # [0] == 1
-	x2 = toak(sc) # True
+	x2 = toak(sc) # [0] = True
 	x3 = twopair(sc) # [0] == True
 	x4 = fullhouse(sc) # [0] == True
 	x5 = foak(sc) # True
@@ -80,13 +103,15 @@ def pair(sc):
 	score = 0
 	vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
 	bigFactor = 100
+	decreaser = 20**3
 	for f in fiveCards: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
 		if 2 in counts:
 			if f == bin[counts.index(2)]:
-				score += (vals.index(f[0]) + 1)*100
+				score += (vals.index(f[0]) + 1)*(20**4)
 				pass
 			else:
-				score += vals.index(f[0]) + 1
+				score += (vals.index(f[0]) + 1)*decreaser
+				decreaser = decreaser // 20
 	return [counts.count(2), score]
 '''
 print(pair(sevencards1))
@@ -126,11 +151,11 @@ def twopair(sc):
 	for f in fiveCards: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
 		if 2 in counts:
 			if f == bin[counts.index(2)]:
-				score += (vals.index(f[0]) + 1)*100
+				score += ((vals.index(f[0]) + 1)**3)*(20**2)
 				pass
 			else:
-				score += vals.index(f[0]) + 1
-	return counts.count(2)==2 or counts.count(2)==3
+				score += (vals.index(f[0]) + 1)*20
+	return [counts.count(2)==2 or counts.count(2)==3, score]
 '''
 print(twopair(sevencards1))
 print(twopair(sevencards2))
@@ -154,7 +179,32 @@ def toak(sc):
 			counts[bin.index(sc[x][0])] += 1
 		x += 1
 	#print(counts)
-	return counts.count(3)==1 or counts.count(3)==2
+	# calculate a score to compare themlargestCardRank = ""
+	threeCardRank = ""
+	if counts.count(3) == 1:
+		threeCardRank = bin[counts.index(3)]
+	# dont need to consider two toak because that would be a full house
+	else:
+		return [False, 0]
+	otherCards  = ""
+	vals = ["", "2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+	for v in vals:
+		for c in sc:
+			if v == c[0] and c[0] != threeCardRank:
+				otherCards += v
+		for c in sc:
+			if v == c[0] and c[0] != threeCardRank and c[0] not in otherCards:
+				otherCards = otherCards + v
+	score = 0
+	vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+	bigFactor = 20**3
+	if counts.count(3)==1:
+		score += (vals.index(bin[counts.index(3)]) + 1) * bigFactor
+		bigFactor = bigFactor // 20
+		score += (vals.index(otherCards[0]) + 1) * bigFactor
+		bigFactor = bigFactor // 20
+		score += (vals.index(otherCards[1]) + 1) * bigFactor
+	return [counts.count(3)==1, score]
 def count(sc):
 	ranks = "23456789TJQKA"
 	rankCounts = [0]*len(ranks)
@@ -184,12 +234,16 @@ def fullhouse(sc):
 	score = 0
 	vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
 	bigFactor = 0 # i need to make the three of a kind much more valuable than the pair
+	out = [False]
 	for f in fiveCards: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
 		if f[0] == toakRank:
 			bigFactor = 100
 		score += (vals.index(f[0]) + 1) * bigFactor
 	if pairRank != "" and toakRank != "":
 		out = [True, pairRank, toakRank, score]
+		vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+		score = (vals.index(toakRank) + 1)*100 + (vals.index(pairRank) + 1)*1
+		out = [True, score, toakRank, pairRank]
 	else:
 		out = [False, "", "", 0]
 	return out
@@ -213,7 +267,25 @@ def foak(sc):
 			counts[bin.index(sc[x][0])] += 1
 		x += 1
 	#print(counts)
-	return counts.count(4)==1
+	# find the largest card that is not the one with count 4
+	largestCardRank = ""
+	if counts.count(4) == 1:
+		fourCardRank = bin[counts.index(4)]
+	else:
+		return [False, 0]
+	vals = ["", "2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+	for v in vals:
+		for c in sc:
+			if v == c[0] and c[0] != fourCardRank:
+				largestCardRank = v
+	score = 0
+	if counts.count(4)==1:
+		rank = bin[counts.index(4)]
+		vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+		score = (vals.index(rank) + 1)*20**2 + vals.index(largestCardRank)
+	else:
+		score = 0
+	return [counts.count(4)==1, score]
 '''
 print(highcard(sevencards1))
 print(highcard(sevencards2))
@@ -249,6 +321,7 @@ def straight(sc):
 	idx = 0
 	validStraight = ""
 	out = "-NOSTRAIGHT-"
+	score = 0
 	for r in order:
 		if r == "J":
 			break
@@ -259,7 +332,23 @@ def straight(sc):
 		if validStraight in orderedRanks:
 			out = validStraight
 		validStraight = ""
-	return out
+	if out != "-NOSTRAIGHT-":
+		ranks = "AKQJT98765432"
+		fiveCards = []
+		idx = 0
+		for r in ranks:
+			for c in sc:
+				if r == c[0]:
+					fiveCards.append(r)
+			if len(fiveCards) == 5:
+				break
+		vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+		decreaser = 20**5
+		for f in fiveCards: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
+			score += (vals.index(f) + 1)*decreaser
+			decreaser = decreaser // 20
+		#print(score)
+	return [out, score]
 '''
 print(straight(sevencards4))
 print(straight(sevencards1))
@@ -298,15 +387,15 @@ def flush(sc):
 				foundOrdered.append(c)
 	if count >= 5:
 		#print(foundOrdered)
-		out = [foundOrdered[-1], foundOrdered[-2], foundOrdered[-3], foundOrdered[-4], foundOrdered[-5]]
+		foundOrdered = [foundOrdered[-1], foundOrdered[-2], foundOrdered[-3], foundOrdered[-4], foundOrdered[-5]]
 		#print(out)
 	# give the flush a numeric score to compare it with other flushes
 	score = 0
 	vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
 	if count >= 5:
-		for f in out: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
+		for f in foundOrdered: # making this OUT rather than foundOrdered means it doesn't count redundant cards in the score
 			score += vals.index(f[0]) + 1
-	return [out, score]
+	return [out, score, foundOrdered]
 '''
 print(flush(sevencards4))
 print(flush(sevencards1))
@@ -316,18 +405,19 @@ print(flush(sevencards7))
 print(flush(sevencards8))
 '''
 def strFlush(sc):
-	out = False
-	flushcards = flush(sc)
+	out = [False]
+	flushcards = flush(sc)[2]
 	strCards = straight(sc)
 	strflCount = 0
 	idx = 0
 	strfl = ""
-	if flushcards[1] != 0:
+	if flushcards != []:
 		#print("There is a flush")
 		# now if there is a flush and also a straight flush, the suit of the flush
 		# must also be the suit of the straight flush, because you cannot have two
 		# flushes in one hand
-		theSuit = flushcards[0][0][1]
+		#print(flushcards)
+		theSuit = flushcards[0][1]
 		#print(theSuit)
 		
 		if len(strCards) == 5:
@@ -341,6 +431,13 @@ def strFlush(sc):
 				strflCount  = 0
 	if len(strfl) == 5:
 		out = [True, strfl]
+		vals = ["2","3","4","5","6","7","8","9","T","J","Q","K","A"]
+		score = vals.index(strfl[0]) + 2 # +2 because smallest is a23...
+		if strfl[0] == 'A':
+			score = 1
+		out[1] = score
+	else:
+		out = [False, ""]
 	return out
 '''
 sevencards9 = ["2S","2D","6H","7H","8H","9H","TH"]

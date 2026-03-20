@@ -35,10 +35,11 @@ def shuffle120(deck):
 
 deck = shuffle120(deck)
 
-def getnew7():
+# get amount random cards as if taken from a shuffled deck
+def getnew(amount):
 	global deck
 	deck = shuffle120(deck)
-	return deck[0:7]
+	return deck[0:amount]
 
 # checks if two cards could form a straight
 def rank(c):

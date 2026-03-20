@@ -1,0 +1,43 @@
+import cards
+'''
+print(cards.genhighcard())
+print(cards.isStraight(["AS","3S","5S","7S","9S","JS","KS"]))
+print(cards.isStraight(["4S","3S","5S","7S","6S","JS","8S"]))
+print(cards.symsToRank(["4S","3S","5S","7S","6S","JS","8S"]))
+print(cards.isFlush(["4S","3S","5S","7S","6S","JS","8S"]))
+print(cards.isFlush(["4H","3C","5D","7S","6D","JC","8S"]))
+print(cards.isPairOrMore(["4H","3C","5D","7S","6D","JC","8S"]))
+print(cards.isPairOrMore(["4H","3C","4D","7S","6D","JC","8S"]))
+
+'''
+import analyze07032026 as e
+print(e.toak(["AS","AH","AC","2D","4H","6D","8S"]))
+
+import scores as s
+print(s.highcard(["AS","KS","QS","JH","9H","8H","7C"]))
+print(s.highcard(["AS","KS","QS","JH","9H","8H","6C"]))
+print(s.highcard(["AS","KS","QS","JH","8H","7H","6C"]))
+print(s.pair(["AS","AS","QS","JH","8H","7H","6C"]))
+print(s.pair(["AS","QS","QS","JH","8H","7H","6C"]))
+print(s.twopair(["AS","AS","QS","QH","8H","7H","6C"]))
+print(s.twopair(["AS","QS","QS","AH","9H","7H","6C"]))
+print(s.twopair(["AS","6S","QS","AH","9H","QH","6C"]))
+print(s.ssbr("A2983JQK"))
+print(s.toak(["AS","6S","QS","AH","9H","JH","AC"]))
+print(s.toak(["AS","6S","QS","2H","9H","QH","QC"]))
+print(s.toak(["5S","6S","QS","2H","9H","QH","QC"]))
+print(s.toak(["KS","6S","QS","2H","9H","QH","QC"]))
+print(s.foak(["QD","6S","QS","2H","9H","QH","QC"]))
+print(s.fullhouse(["QD","6S","QS","2H","9H","QH","6C"]))
+print(s.fullhouse(["QD","5S","QS","2H","9H","QH","5C"]))
+print(s.fullhouse(["QD","5S","QS","2H","AH","QH","5C"]))
+print(s.flush(["AS","KS","QS","JS","SH","8H","7S"]))
+print(s.flush(["AS","KS","QS","JS","SH","8H","6S"]))
+print(s.flush(["AS","KS","QS","JS","SS","8H","6S"]))
+print(s.flush(["AD","KD","QD","JD","SD","8H","6D"]))
+print(s.flush(["2D","3D","4D","5D","7D","AS","AC"]))
+print(s.straight(["AD","2D","3D","4D","5S","AS","AC"]))
+print(s.straight(["6D","5D","4D","3D","2S","AS","AC"]))
+print(s.straight(["KD","TD","QD","JD","2S","9S","7C"]))
+print(s.strFlush(["KD","TD","QD","JD","2S","9D","7C"]))
+print(s.strFlush(["KD","TD","QD","JD","2S","8D","9D"]))
