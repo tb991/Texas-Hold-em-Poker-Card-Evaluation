@@ -101,17 +101,16 @@ def conseq(playernum, decision, raisetally, balances, pot, folded, lasttocall, s
 		folded.append(playernum)
 		if playernum == lasttocall[0]:
 			lasttocall = ["done"]
-round_ = 4
+round_ = 1
 folded = []
 dealer = 1
 choicesmade = 0
 ## GAME LOOP ##
 while True:
 	if round_ == 4:
-		round_ = 0
-		dealer = (dealer + 1 ) % moddy
+		break
 	print(" --- ROUND "+ str(round_) + " ---")
-	if round_ == 0:
+	if round_ == 1:
 		lasttocall = [3]
 		lasttocheck = [3]
 		playernum = 2
@@ -128,6 +127,7 @@ while True:
 			players.append(getcards(allplayablecards, i + 2))
 			printcards(players[i], showpcards)
 		table = [allplayablecards[-1],allplayablecards[-2],allplayablecards[-3],allplayablecards[-4],allplayablecards[-5]]
+		flop = table[0:3]
 		#print(players)
 		print(table)
 		input("")
@@ -143,10 +143,100 @@ while True:
 		## START OF BETTING OUTSIDE OF BLINDS
 		while lasttocall[0] != "done" and playernum != -1:
 			if playernum not in folded:
-				d = dformat(playernum, players[playernum-1] + table) # this function makes the decision of the player
+				d = dformat(playernum, players[playernum-1] + flop) # this function makes the decision of the player
 				if d == "RAISE":
 					lasttocheck[0] = -1 ## nullify
 				if (d == "CALL" or d == "FOLD") and playernum == lasttocheck[0]:
+					if d == "FOLD":
+						folded.append(playernum)
+					print("---ROUND OVER---")
+					round_ = 2
+					print("---POT IS " + str(pot[0]) + "---")
+					ingame = [] # helps with debugging
+					for x in [1,2,3,4,5,6]:
+						if x not in folded:
+							ingame.append(x)
+					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
+					if len(ingame) == 1:
+						round_ = 4 ## all rounds over
+					break
+				if lasttocall[0] == playernum and d == "CALL":
+					print("---ROUND OVER---")
+					round_ = 2
+					print("---POT IS " + str(pot[0]) + "---")
+					ingame = [] # helps with debugging
+					for x in [1,2,3,4,5,6]:
+						if x not in folded:
+							ingame.append(x)
+					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
+					if len(ingame) == 1:
+						round_ = 4 ## all rounds over
+					break
+				if lasttocall[0] == playernum and d == "FOLD":
+					print("---ROUND OVER---")
+					round_ = 2
+					print("---POT IS " + str(pot[0]) + "---")
+					ingame = [] # helps with debugging
+					for x in [1,2,3,4,5,6]:
+						if x not in folded and x != playernum:
+							ingame.append(x)
+					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
+					if len(ingame) == 1:
+						round_ = 4 ## all rounds over
+					break
+				
+				conseq(playernum, d, raisetally, balances, pot, folded, lasttocall, smallblind)
+				print("POT: " + str(pot[0]))
+				print("LAST TO CALL: " + str(lasttocall[0]))
+				playernum = incpnum(playernum, folded)
+				#print("FOLD BIN: " + str(folded))
+				ingame = [] # helps with debugging
+				for x in [1,2,3,4,5,6]:
+					if x not in folded:
+						ingame.append(x)
+				if len(ingame) == 1:
+					print("---ROUNDs OVER--- player " + str(ingame[0]) + " wins " + str(pot[0]))
+					round_ = 4
+					break
+				#print(lasttocall)
+				input("")
+		round_ =2
+	else:
+		raisetally = [2] 
+		if round_ == 4:
+			print("---ROUNDS OVER---")
+			break
+		tablecards = []
+		smallblind[0] = -1 # not needed here
+		if round_ == 2:
+			tablecards = table[0:4]
+		elif round_ == 3:
+			tablecards = table[0:5]
+		lasttocall = [dealer]
+		lasttocheck = [dealer]
+		print(str(lasttocheck))
+		while lasttocheck[0] in folded:
+			lasttocheck[0] -= 1
+			if lasttocheck[0] == 0:
+				lasttocheck[0] = 6
+		while lasttocall[0] in folded:
+			lasttocall[0] -= 1
+			if lasttocall[0] == 0:
+				lasttocall[0] = 6
+		pplist = [2,3,4,5,6, 1] # potential players list, in order of play
+		playernum - 2
+		for p in pplist:
+			if p not in folded:
+				playernum = p
+				break
+		## START OF BETTING
+		while lasttocall[0] != "done" and playernum != -1:
+			if playernum not in folded:
+				d = dformat(playernum, players[playernum-1] + tablecards) # this function makes the decision of the player
+				if d == "RAISE":
+					lasttocheck[0] = -1 ## nullify
+				if (d == "CALL" or d == "FOLD") and playernum == lasttocheck[0]:
+					print("section a")
 					if d == "FOLD":
 						folded.append(playernum)
 					print("---ROUND OVER---")
@@ -158,6 +248,7 @@ while True:
 					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
 					break
 				if lasttocall[0] == playernum and d == "CALL":
+					print("section b")
 					print("---ROUND OVER---")
 					print("---POT IS " + str(pot[0]) + "---")
 					ingame = [] # helps with debugging
@@ -167,6 +258,9 @@ while True:
 					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
 					break
 				if lasttocall[0] == playernum and d == "FOLD":
+					print("section c")
+					if d == "FOLD":
+						folded.append(playernum)
 					print("---ROUND OVER---")
 					print("---POT IS " + str(pot[0]) + "---")
 					ingame = [] # helps with debugging
@@ -175,7 +269,9 @@ while True:
 							ingame.append(x)
 					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
 					break
-				
+				# need to add folded player if he wasn't already added:
+				if d == "FOLD" and playernum not in folded:
+					folded.append(playernum)
 				conseq(playernum, d, raisetally, balances, pot, folded, lasttocall, smallblind)
 				print("POT: " + str(pot[0]))
 				print("LAST TO CALL: " + str(lasttocall[0]))
@@ -190,28 +286,6 @@ while True:
 					break
 				#print(lasttocall)
 				input("")
+			else:
+				playernum = incpnum(playernum, folded)
 		round_ += 1
-	else:
-		break
-		lasttocall = [dealer]
-		itCount = 0
-		roundover = False
-		while lasttocall in folded:
-			lasttocall = (lasttocall + 1) % moddy
-			itCount += 1 # breaks if nobody to call left
-			if itCount == totalplayers * 2:
-				roundover = True
-		if not roundover:
-			pplist = [2,3,4,5,6, 1] # potential players list, in order of play
-			for p in pplist:
-				if p not in folded:
-					playernum = p
-					break
-			## START OF BETTING
-			while lasttocall[0] != "done":
-				if playernum not in folded:
-					d = dformat(playernum, players[playernum-2] + table)
-					conseq(playernum, d, raisetally, balances, pot, folded, lasttocall)
-					playernum = incpnum(playernum, folded)
-					input("")
-			round_ += 1
