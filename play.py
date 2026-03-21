@@ -23,21 +23,55 @@ showpcards = True
 dealer = 1
 
 def decide(cards):
+	'''
 	out = ""
 	score = heur.simplestheur(cards)
 	decider = random.randint(10,88)
-	if decider > score + 20:
+	#print(str(decider/score))
+	if decider/score <= 1: 
 		out = "FOLD"
-	elif decider < score - 20:
-		out = "RAISE"
-	else:
+	elif decider/score <= 2:
+		out = "CHECK"
+	elif decider/score <= 3: 
 		out = "CALL"
+	else:
+		out = "RAISE"
+	'''
+	out = "RAISE" # testing
 	return out
 # game decision string
-def dformat(playernum, cards):
+def dformat(playernum, cards, bets, theRound, lasttocheck, balances, ramount):
 	decision = decide(cards)
+	if decision == "CALL" and bets == 0 and theRound > 1: # cant call if nobody has bet
+		decision = "RAISE"
+	if decision == "FOLD" and (bets == 0 and theRound != 1): # no point folding if nobody has bet
+		decision = "CHECK"
+	if decision == "FOLD" and (playernum == lasttocheck[0] or playernum == lasttocall[0]): #
+		decision = "CHECK"
+	# can't call if there's been no bets
+	if decision == "CALL" and bets == 0:
+		x = random.randint(0,10)
+		if x == 0 or x == 1:
+			decision = "RAISE"
+		elif x in [2,3,4,5]:
+			decision = "CHECK"
+		else:
+			decision = "FOLD"
+	# can't check in first round unless you're the lasttocheck and everyone has called or folded
+	if decision == "CHECK" and theRound == 1 and (playernum != lasttocheck[0]):
+		x = random.randint(0,3)
+		if x == 0:
+			decision = "CALL"
+		else:
+			decision = "FOLD"
+	if decision == "CHECK" and bets > 0 and theRound > 1:
+		decision = "FOLD"
+	extra = ""
+	if (decision == "RAISE" or decision == "CALL") and balances[playernum - 1] <= ramount:
+		decision = "CALL" + " (ALL-IN)"
 	out = "Player " + str(playernum) + ": " + decision
-	print(out)
+	print(out + extra)
+	#print(decision)
 	return decision
 
 moddy = totalplayers + 1 # regularly used to help rotate players
@@ -64,19 +98,19 @@ def changebal(balances, playernum, amount, pot):
 def conseq(playernum, decision, raisetally, balances, pot, folded, lasttocall, smallblind):
 	dec = decision
 	callamount = 0
-	raiseamount = 0
+	raiseamount = -raisetally[0]
 	# for if you can't raise as much as the raisetally due to balance
-	if dec == "RAISE" and balances[playernum-1] < raisetally[0]:
+	if dec == "RAISE" and balances[playernum-1] <= raisetally[0] + 2:
 		dec = "CALL"
-		raiseamount = balances[playernum-1]
+		raiseamount = -balances[playernum-1]
 	if dec == "RAISE":
 	
 		raisetally[0] += 2
 		raiseamount = -raisetally[0]
 		if smallblind[0] == playernum:
 			smallblind[0] = "None"
-			raiseamount += 1
-		if raiseamount > balances[playernum-1]:
+			raiseamount += 1 # plus to undo the 2 from standard raise
+		if -raiseamount > balances[playernum-1]:
 			dec = "CALL"
 			callamount = balances[playernum -1]
 		changebal(balances, playernum, raiseamount, pot)
@@ -87,11 +121,13 @@ def conseq(playernum, decision, raisetally, balances, pot, folded, lasttocall, s
 			lasttocall[0] = (lasttocall[0] - 1)
 			if lasttocall[0] == 0:
 				lasttocall[0] = 6
-	if dec == "CALL":
-		am = -raisetally[0]
+	if dec == "CALL" or dec == "CALL (ALL-IN)":
+		am = raiseamount
+		if raisetally[0] >= balances[playernum - 1]:
+			am = -balances[playernum - 1]
 		if playernum == smallblind[0]:
 			smallblind[0] = "None"
-			am = am + 1
+			am = am - 1
 		if callamount != 0: # this fires if he wanted to raise but can't
 			am = callamount
 		changebal(balances, playernum, am, pot)
@@ -107,10 +143,16 @@ dealer = 1
 choicesmade = 0
 ## GAME LOOP ##
 while True:
-	if round_ == 4:
+	everyoneallin = False
+	ingame = [] # helps with debugging
+	for x in range(1, totalplayers + 1):
+		if x not in folded:
+			ingame.append(x)
+	if round_ > 3 or (len(ingame) == 1):
 		break
-	print(" --- ROUND "+ str(round_) + " ---")
 	if round_ == 1:
+		print(" --- ROUND "+ str(round_) + " ---")
+		bets = 0
 		lasttocall = [3]
 		lasttocheck = [3]
 		playernum = 2
@@ -135,63 +177,67 @@ while True:
 		print("Player " + str(playernum) + " SMALL BLIND")
 		smallblind = [playernum]
 		changebal(balances, playernum, -1, pot)
+		bets += 1
 		playernum = incpnum(playernum, folded)
 		
 		print("Player " + str(playernum) + " BIG BLIND")
 		changebal(balances, playernum, -2, pot)
+		bets += 1
 		playernum = incpnum(playernum, folded)
 		## START OF BETTING OUTSIDE OF BLINDS
 		while lasttocall[0] != "done" and playernum != -1:
+			exit = False
 			if playernum not in folded:
-				d = dformat(playernum, players[playernum-1] + flop) # this function makes the decision of the player
+				d = dformat(playernum, players[playernum-1] + flop, bets, round_, lasttocheck, balances, raisetally[0]) # decision function
+				conseq(playernum, d, raisetally, balances, pot, folded, lasttocall, smallblind)
+				if d == "CALL (ALL-IN)":
+					lasttocall[0] = playernum - 1
+					if lasttocall[0] == 0:
+						lasttocall[0] = 6
+					count = 0
+					while balances[lasttocall[0]-1] == 0 or lasttocall[0] in folded:
+						lasttocall[0] -= 1
+						if lasttocall[0] == 0:
+							lasttocall[0] = 6
+						count += 1
+						if count > 12:
+							#everyone is all in, so exit
+							exit = True
+							everyoneallin = True
+							input("EVERYONE IS ALL-IN")
+							break
+							# last to call is invalid now
+					if everyoneallin:
+						break
 				if d == "RAISE":
 					lasttocheck[0] = -1 ## nullify
-				if (d == "CALL" or d == "FOLD") and playernum == lasttocheck[0]:
-					if d == "FOLD":
-						folded.append(playernum)
-					print("---ROUND OVER---")
-					round_ = 2
-					print("---POT IS " + str(pot[0]) + "---")
-					ingame = [] # helps with debugging
-					for x in [1,2,3,4,5,6]:
-						if x not in folded:
-							ingame.append(x)
-					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
-					if len(ingame) == 1:
-						round_ = 4 ## all rounds over
-					break
+					bets += 1
+				if (d == "CALL" or d == "CHECK" or d == "FOLD") and ((playernum == lasttocheck[0]) or (playernum == lasttocall[0])):
+					exit = True
 				if lasttocall[0] == playernum and d == "CALL":
-					print("---ROUND OVER---")
-					round_ = 2
-					print("---POT IS " + str(pot[0]) + "---")
-					ingame = [] # helps with debugging
-					for x in [1,2,3,4,5,6]:
-						if x not in folded:
-							ingame.append(x)
-					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
-					if len(ingame) == 1:
-						round_ = 4 ## all rounds over
-					break
+					exit = True
 				if lasttocall[0] == playernum and d == "FOLD":
-					print("---ROUND OVER---")
-					round_ = 2
-					print("---POT IS " + str(pot[0]) + "---")
-					ingame = [] # helps with debugging
-					for x in [1,2,3,4,5,6]:
-						if x not in folded and x != playernum:
-							ingame.append(x)
-					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
-					if len(ingame) == 1:
-						round_ = 4 ## all rounds over
-					break
-				
-				conseq(playernum, d, raisetally, balances, pot, folded, lasttocall, smallblind)
+					exit = True
+				print(str(balances))
 				print("POT: " + str(pot[0]))
 				print("LAST TO CALL: " + str(lasttocall[0]))
+				if exit:
+					exit = False
+					print("---ROUND OVER---")
+					round_ = 2
+					print("---POT IS " + str(pot[0]) + "---")
+					ingame = [] # helps with debugging
+					for x in range(1, totalplayers + 1):
+						if x not in folded:
+							ingame.append(x)
+					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
+					if len(ingame) == 1:
+						round_ = 4 ## all rounds over
+						break
 				playernum = incpnum(playernum, folded)
 				#print("FOLD BIN: " + str(folded))
 				ingame = [] # helps with debugging
-				for x in [1,2,3,4,5,6]:
+				for x in range(1, totalplayers + 1):
 					if x not in folded:
 						ingame.append(x)
 				if len(ingame) == 1:
@@ -200,8 +246,20 @@ while True:
 					break
 				#print(lasttocall)
 				input("")
-		round_ =2
+		if round_ != 4:
+			round_ =2
+		ingame = [] # helps with debugging
+		for x in range(1, totalplayers + 1):
+			if x not in folded and x != playernum:
+				ingame.append(x)
+		if len(ingame) == 1:
+			round_ = 4 ## all rounds over
+			break
+		if everyoneallin:
+			break
 	else:
+		print(" --- ROUND "+ str(round_) + " ---")
+		bets = 0
 		raisetally = [2] 
 		if round_ == 4:
 			print("---ROUNDS OVER---")
@@ -231,54 +289,46 @@ while True:
 				break
 		## START OF BETTING
 		while lasttocall[0] != "done" and playernum != -1:
+			ingame = []
+			exit = False # enables feedback and exitting loop
+			for x in range(1, totalplayers + 1):
+				if x not in folded:
+					ingame.append(x)
+			if len(ingame) == 1:
+				print("---ROUND OVER--- player " + str(ingame[0]) + " wins " + str(pot[0]))
+				break
 			if playernum not in folded:
-				d = dformat(playernum, players[playernum-1] + tablecards) # this function makes the decision of the player
+				d = dformat(playernum, players[playernum-1] + tablecards, bets, round_, lasttocheck, balances) 
+				# that function makes the decision of the player
 				if d == "RAISE":
 					lasttocheck[0] = -1 ## nullify
-				if (d == "CALL" or d == "FOLD") and playernum == lasttocheck[0]:
-					print("section a")
-					if d == "FOLD":
-						folded.append(playernum)
-					print("---ROUND OVER---")
-					print("---POT IS " + str(pot[0]) + "---")
-					ingame = [] # helps with debugging
-					for x in [1,2,3,4,5,6]:
-						if x not in folded:
-							ingame.append(x)
-					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
-					break
-				if lasttocall[0] == playernum and d == "CALL":
-					print("section b")
-					print("---ROUND OVER---")
-					print("---POT IS " + str(pot[0]) + "---")
-					ingame = [] # helps with debugging
-					for x in [1,2,3,4,5,6]:
-						if x not in folded:
-							ingame.append(x)
-					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
-					break
-				if lasttocall[0] == playernum and d == "FOLD":
-					print("section c")
-					if d == "FOLD":
-						folded.append(playernum)
-					print("---ROUND OVER---")
-					print("---POT IS " + str(pot[0]) + "---")
-					ingame = [] # helps with debugging
-					for x in [1,2,3,4,5,6]:
-						if x not in folded and x != playernum:
-							ingame.append(x)
-					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
-					break
-				# need to add folded player if he wasn't already added:
-				if d == "FOLD" and playernum not in folded:
-					folded.append(playernum)
+					bets += 1
+				if (d == "CALL" or d == "CHECK" or d == "FOLD") and (playernum == lasttocheck[0]):
+					exit = True
+				if (lasttocall[0] == playernum) and (d == "CALL"):
+					exit = True
+				if (lasttocall[0] == playernum) and (d == "FOLD"):
+					exit = True
 				conseq(playernum, d, raisetally, balances, pot, folded, lasttocall, smallblind)
+				if exit:
+					print("---ROUND OVER---")
+					print("---POT IS " + str(pot[0]) + "---")
+					ingame = [] # helps with debugging
+					for x in range(1, totalplayers + 1):
+						if x not in folded:
+							ingame.append(x)
+					print("PLAYERS IN THE GAME ARE: " + str(ingame) + "")
+					if len(ingame) == 1:
+						print("---ROUNDs OVER--- player " + str(ingame[0]) + " wins " + str(pot[0]))
+						round_ = 4
+					break
 				print("POT: " + str(pot[0]))
 				print("LAST TO CALL: " + str(lasttocall[0]))
+				print("BETS: " + str(bets))
 				playernum = incpnum(playernum, folded)
 				#print("FOLD BIN: " + str(folded))
 				ingame = [] # helps with debugging
-				for x in [1,2,3,4,5,6]:
+				for x in range(1, totalplayers + 1):
 					if x not in folded:
 						ingame.append(x)
 				if len(ingame) == 1:
@@ -289,3 +339,4 @@ while True:
 			else:
 				playernum = incpnum(playernum, folded)
 		round_ += 1
+		print("round number increased")
