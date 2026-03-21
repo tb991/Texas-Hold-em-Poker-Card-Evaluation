@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Poker Table</title>
+</head>
+<body>
+
+<div class="container">
+    <canvas id="pokerCanvas" width="900" height="600"></canvas>
+    <button id="nextBtn" onclick="nextStage()">Next</button>
+</div>
+
+<style>
+.container {
+    position: relative;
+    width: 900px;
+    margin: auto;
+}
+
+#nextBtn {
+    position: absolute;
+    bottom: 50px;
+    left: 80%;
+    transform: translateX(-50%);
+    padding: 12px 30px;
+    font-size: 18px;
+    background: #ffffff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+canvas {
+    display: block;
+    margin: auto;
+    background: #0b3d2e;
+        }
+</style>
+
+<script>
+const canvas = document.getElementById("pokerCanvas");
+const ctx = canvas.getContext("2d");
+
+const centerX = canvas.width / 2;
+const centerY = canvas.height / 2;
+
+let stage = 0; // 0 = none, 1 = flop, 2 = turn, 3 = river
+const boardCards = ["A♠", "K♦", "7♣", "2♥", "J♠"];
+
+// Player positions (6-max)
+const players = [
+    {name: "You", chips: 1000, angle: Math.PI / 2},
+    {name: "P2", chips: 1000, angle: Math.PI / 6},
+    {name: "P3", chips: 1000, angle: -Math.PI / 6},
+    {name: "P4", chips: 1000, angle: -Math.PI / 2},
+    {name: "P5", chips: 1000, angle: -5 * Math.PI / 6},
+    {name: "P6", chips: 1000, angle: 5 * Math.PI / 6},
+];
+
+const tableRadiusX = 300;
+const tableRadiusY = 180;
+
+// Draw table
+function drawTable() {
+    ctx.fillStyle = "#145a32";
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, tableRadiusX, tableRadiusY, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#0a2a1f";
+    ctx.lineWidth = 10;
+    ctx.stroke();
+}
+
+// Draw players
+function drawPlayers() {
+    players.forEach((p, i) => {
+        const x = centerX + Math.cos(p.angle) * (tableRadiusX + 80);
+        const y = centerY + Math.sin(p.angle) * (tableRadiusY + 60);
+
+        // Seat circle
+        ctx.fillStyle = "#222";
+        ctx.beginPath();
+        ctx.arc(x, y, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Name
+        ctx.fillStyle = "white";
+        ctx.font = "14px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(p.name, x, y - 40);
+
+        // Chips
+        ctx.fillText("£" + p.chips, x, y + 50);
+
+        // Dealer button (example: player 0)
+        if (i === 0) {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(x + 40, y, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = "black";
+            ctx.font = "10px Arial";
+            ctx.fillText("D", x + 40, y + 3);
+        }
+    });
+}
+
+// Draw cards
+function drawCard(x, y, label) {
+    ctx.fillStyle = "white";
+    ctx.fillRect(x, y, 50, 70);
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(x, y, 50, 70);
+
+    ctx.fillStyle = "black";
+    if (label[1] == "♥" || label[1] == "♦"){
+    	ctx.fillStyle = "red";
+    }
+    ctx.font = "16px Arial";
+    ctx.fillText(label, x + 23, y + 40);
+}
+
+// 🔥 Updated board logic
+function drawBoard() {
+    const startX = centerX - 140;
+    const y = centerY - 35;
+
+    let cardsToShow = 0;
+
+    if (stage === 1) cardsToShow = 3; // flop
+    if (stage === 2) cardsToShow = 4; // turn
+    if (stage === 3) cardsToShow = 5; // river
+
+    for (let i = 0; i < cardsToShow; i++) {
+        drawCard(startX + i * 60, y, boardCards[i]);
+    }
+}
+
+// Player hand (bottom)
+function drawPlayerHand() {
+    drawCard(centerX - 40, canvas.height - 120, "Q♠");
+    drawCard(centerX + 10, canvas.height - 120, "Q♥");
+}
+
+// Render everything
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawTable();
+    drawPlayers();
+    drawBoard();
+    drawPlayerHand();
+}
+
+// 🔥 Button logic
+function nextStage() {
+    if (stage < 3) {
+        stage++;
+        render();
+    }
+}
+render();
+</script>
+
+</body>
+</html>
